@@ -165,7 +165,6 @@ mart <- useEnsembl(biomart = "ensembl",
 ##############################################################################################
 ##############################################################################################
 ##old human genome aggro dataset
-setwd("E:\\NTFS\\TURKU - CURRENT JOB\\0.HumanDiversity_2024\\hUDI\\Dataset\\aggro_db")
 aggro_genes_old_human <- getSequence(id = aggro_genes_id,
                            type="ensembl_gene_id",
                            seqType="gene_exon_intron",
@@ -190,7 +189,6 @@ aggro_genes_coords <- getBM(attributes = c("ensembl_gene_id", "chromosome_name",
 
 #################################
 ##old human genome random dataset
-setwd("E:\\NTFS\\TURKU - CURRENT JOB\\0.HumanDiversity_2024\\hUDI\\Dataset\\random_db")
 random_genes_old_human<- getSequence(id = random_genes_id,
                         type="ensembl_gene_id",
                         seqType="gene_exon_intron",
