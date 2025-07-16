@@ -24,39 +24,26 @@ sorted_higher_maf <- species_df[order(as.numeric(as.character(species_df_filtere
 sorted<-species_df[order(species_df$neander),]
 
 #stats# binomial test
-# Step 0: Add the depth information  
-# Merge the coverage data based on gene and position
+
 species_df <- merge(species_df, aggro_sum_loci, by = c("loci","position"))
 species_df <- species_df[ -c(7) ] #remove unecessary columns - example
 str(species_df)
 
-# Ensure columns are numeric
 species_df$amh <- as.numeric(species_df$amh)
 species_df$neander <- as.numeric(species_df$neander)
 species_df$alt <- as.numeric(species_df$alt)
 
-# Filter rows where coverage is greater than xx
-species_df_filtered <- species_df[species_df$alt > 2, ]
-
-# Log-transform the coverage (to stabilize variance)
+species_df_filtered <- species_df[species_df$alt > 2, ] ## choose depth at this step
 species_df_filtered$log_alt <- log(species_df_filtered$alt)
 
-# Now normalize the frequencies using the log-transformed coverage
 species_df_filtered$amh_normalized_log <- species_df_filtered$amh / species_df_filtered$log_alt
 species_df_filtered$neander_normalized_log <- species_df_filtered$neander / species_df_filtered$log_alt
 
-# Perform the comparison (neander > amh) only on rows where coverage > 5
-comparison_result <- species_df_filtered$neander_normalized_log > species_df_filtered$amh_normalized_log
-
-# Count the number of successes (neander > amh)
+comparison_result <- species_df_filtered$neander_normalized_log > species_df_filtered$amh_normalized_log ## check depth
 num_successes <- sum(comparison_result)
 num_trials <- length(comparison_result)
 
-# Perform the binomial test
 binom_test_10 <- binom.test(num_successes, num_trials, p = 0.5, alternative = "two.sided") # change according to different depths 
-binom_test_2 <- binom.test(num_successes, num_trials, p = 0.5, alternative = "two.sided") # change according to different depths
-binom_test_5 <- binom.test(num_successes, num_trials, p = 0.5, alternative = "two.sided") # change according to different depths
-binom_test_10 <- binom.test(num_successes, num_trials, p = 0.5, alternative = "two.sided") # change according to different depths
 
 ### Plotting
 species_df_long <- pivot_longer(species_df, cols = c("amh", "neander"),
@@ -122,64 +109,39 @@ if (any(is.na(mean_values)) | any(is.na(std_dev_values))) {
   stop("There are missing values in the mean or standard deviation calculations.")
 }
 
-z_scores <- sweep(age_bins_df[, 3:9], 1, mean_values, FUN = "-")  # Subtract the mean
-z_scores <- sweep(z_scores, 1, std_dev_values, FUN = "/")  # Divide by standard deviation
-
-# Combine SNP names (column 1) with the Z-scores
-z_score_df <- cbind(age_bins_df[, 1:2, drop = FALSE], z_scores)
-
-# View the resulting data frame with SNP names and Z-scores
+# z scores and new table
+z_scores <- sweep(age_bins_df[, 3:9], 1, mean_values, FUN = "-") 
+z_scores <- sweep(z_scores, 1, std_dev_values, FUN = "/")  
+z_score_df <- cbind(age_bins_df[, 1:2, drop = FALSE], z_scores) # Combine SNP names (column 1) with the Z-scores
 print(z_score_df)
 
 ####
 mean_z_scores <- rowMeans(z_score_df[, 3:9], na.rm = TRUE)
 std_dev_z_scores <- apply(z_score_df[, 3:9], 1, sd, na.rm = TRUE)
 
-
-# View the updated data frame
 print(z_score_df)
 z_score_df<-z_score_df[with(z_score_df, order(z_score_df$gene, z_score_df$position)), ] #order
-
-# Round all numeric values in the data frame to 2 decimal places
-z_score_df[, columns_to_check] <- round(z_score_df[, columns_to_check], 2)
+z_score_df[, columns_to_check] <- round(z_score_df[, columns_to_check], 2) # Round all numeric values in the data frame to 2 decimal places
 
 # Function to count values exceeding upper limit and return count
 count_exceeding_limit <- function(row_values, upper_limit) {
-  # Round values to 2 decimal places for consistency
   row_values <- round(row_values, 2)
-  
-  # Compare values to the upper limit
   comparisons <- row_values > upper_limit
-  
-  # Return the count of TRUE values (those exceeding the upper limit)
   return(sum(comparisons))
 }
 
-# Apply the comparison function row-wise for the entire data frame
+# Apply the comparison function row-wise for the entire data frame - can be looped for different upper limits
 z_score_df$CountExceeding1.25 <- apply(z_score_df, 1, function(row) {
-  # Convert the row to a vector
   row_values <- as.numeric(row[columns_to_check])
-  
-  # Apply the function for upper limit 1.25
-  count_exceeding_limit(row_values, 1.25)
+  count_exceeding_limit(row_values, 1.25) ## upper limit
 })
 
 z_score_df$CountExceeding2 <- apply(z_score_df, 1, function(row) {
-  # Convert the row to a vector
   row_values <- as.numeric(row[columns_to_check])
-  
-  # Apply the function for upper limit 2
-  count_exceeding_limit(row_values, 2)
+  count_exceeding_limit(row_values, 2) ## upper limit
 })
 
 z_score_df$CountExceeding2.5 <- apply(z_score_df, 1, function(row) {
-  # Convert the row to a vector
   row_values <- as.numeric(row[columns_to_check])
-  
-  # Apply the function for upper limit 2.5
-  count_exceeding_limit(row_values, 2.5)
+    count_exceeding_limit(row_values, 2.5) ## upper limit
 })
-
-# View the updated dataframe with the new columns
-tail(z_score_df)  # View the first few rows to ensure the columns are added correctly
-z_score_df
